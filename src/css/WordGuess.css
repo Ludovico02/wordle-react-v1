@@ -1,0 +1,33 @@
+:root {
+    --tile-background: slategray;
+}
+
+.guess-row {
+    display: flex;
+    gap: 4px;
+    margin: 4px;
+}
+
+.tile {
+    background-color: var(--tile-background);
+    height: 40px;
+    width: 40px;
+    display: flex;
+    border: 1px solid var(--tile-background);
+    border-radius: 8px;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-weight: bold;
+    font-size: 1.2rem;
+    color: black;
+}
+
+/* letter is both right and in the right position */
+.right { 
+    background-color: greenyellow;
+}
+
+.present {
+    background-color: yellow;
+}

@@ -5,6 +5,38 @@
   text-align: center;
 }
 
+.game-area {
+  position: relative;
+}
+
+.game-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: transparent;
+}
+
+.game-modal {
+  width: min(100%, 20rem);
+  padding: 1.5rem;
+  border: 1px solid #626262;
+  border-radius: 8px;
+  background: #303030;
+  box-shadow: 0 12px 36px rgb(0 0 0 / 35%);
+}
+
+.game-modal p {
+  margin: 0 0 1.25rem;
+  font-size: 1.1rem;
+}
+
+.game-modal button {
+  min-height: 44px;
+}
+
 .logo {
   height: 6em;
   padding: 1.5em;

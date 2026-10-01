@@ -21,6 +21,11 @@
     font-weight: bold;
     font-size: 1.2rem;
     color: black;
+    caret-color: transparent;
+}
+
+.tile:focus {
+    outline: 2px solid white;
 }
 
 /* letter is both right and in the right position */

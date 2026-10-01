@@ -1,7 +1,10 @@
 import { fetchWordToGuess, fetchValidWords } from "../services/api.js"
-import  Board from "./Board.jsx"
-import { useState, useEffect } from "react"
+import Board from "./Board.jsx"
+import { useState, useEffect, useCallback } from "react"
 
+const focusLastGuessLetter = () => {
+    document.querySelector("#board .guess-row input:not(:disabled):last-child")?.focus();
+}
 
 export function Wordle() {
     const wordLength = 5;
@@ -19,13 +22,14 @@ export function Wordle() {
     const [wins, setWins] = useState(0);
     const [losses, setLosses] = useState(0);
 
-    const resetGame = async () => {
+    const resetGame = useCallback(async () => {
         setWordToGuess(await fetchWordToGuess());
         setCurrentGuessIndex(0);
         setIsWon(false);
-        setIsLost(false)
+        setIsLost(false);
+        setInvalidGuess("");
         setGameId(prev => prev + 1);
-    }
+    }, []);
 
     useEffect(() => {
         const initGame = async () => {
@@ -38,32 +42,57 @@ export function Wordle() {
         initGame();
     }, [])
 
+    useEffect(() => {
+        if (!invalidGuess && !isWon && !isLost) return;
+
+        const handleKeyDown = (event) => {
+            if (event.key !== "Enter") return;
+            event.preventDefault();
+            if (invalidGuess) {
+                setInvalidGuess("");
+                requestAnimationFrame(focusLastGuessLetter);
+            } else {
+                resetGame();
+            }
+        }
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [invalidGuess, isWon, isLost, resetGame]);
+
     // Used for Debugging Only
     useEffect(() => {
         console.log(wordToGuess);
     }, [wordToGuess])
 
     const checkGuess = (guess) => {
-        const newGuess = Array(wordLength).fill("");
+        const result = Array(wordLength).fill("wrong");
 
-        for(let i = 0; i < wordLength; i++){
-            if(wordToGuess[i] === guess[i]) {
-                newGuess[i] = "right";
-            } else if(wordToGuess.includes(guess[i])) {
-                newGuess[i] = "present";
+        const availableLetters = {};
+
+        for (let i = 0; i < wordLength; i++) {
+            if (guess[i] === wordToGuess[i]) {
+                result[i] = "right";
             } else {
-                newGuess[i] = "wrong";
+                availableLetters[wordToGuess[i]] = (availableLetters[wordToGuess[i]] || 0) + 1;
             }
         }
 
-        return newGuess;
+        for (let i = 0; i < wordLength; i++) {
+            if (result[i] !== "right" && availableLetters[guess[i]] > 0) {
+                result[i] = "present";
+                availableLetters[guess[i]]--;
+            }
+        }
+
+        return result;
     }
 
     const handleCompleteGuess = (gameWon) => {
-        if(gameWon) {
+        if (gameWon) {
             setIsWon(true);
             setWins(prev => prev + 1);
-        } else if(currentGuessIndex === wordLength) {
+        } else if (currentGuessIndex === wordLength) {
             setIsLost(true);
             setLosses(prev => prev + 1);
         }
@@ -74,11 +103,16 @@ export function Wordle() {
         setInvalidGuess(guess);
     }
 
+    const dismissInvalidGuess = () => {
+        setInvalidGuess("");
+        requestAnimationFrame(focusLastGuessLetter);
+    }
+
     if (!wordToGuess || !validWords) return <p>Loading...</p>;
     return (
         <div className="game-area">
             <p>{`Wins: ${wins}, Losses: ${losses}`}</p>
-            <Board 
+            <Board
                 wordLength={wordLength}
                 wordToGuess={wordToGuess}
                 currentGuessIndex={currentGuessIndex}
@@ -91,9 +125,29 @@ export function Wordle() {
                 checkGuess={checkGuess}
                 displayInvalidWordMessage={displayInvalidWordMessage}
             />
-            {invalidGuess && <p>The word {invalidGuess} does not exist</p>}
-            {isWon && <p>You won the game!</p>}
-            {isLost && <p>You Lost the game</p>}
+            {(invalidGuess || isWon || isLost) && (
+                <div className="game-modal-backdrop">
+                    <section
+                        className="game-modal"
+                        role="alertdialog"
+                        aria-modal="true"
+                        aria-labelledby="game-modal-message"
+                    >
+                        <p id="game-modal-message">
+                            {invalidGuess
+                                ? `The word ${invalidGuess} does not exist`
+                                : isWon
+                                    ? "You won the game!"
+                                    : "You lost the game."}
+                        </p>
+                        {invalidGuess ? (
+                            <button type="button" onClick={dismissInvalidGuess}>OK</button>
+                        ) : (
+                            <button type="button" onClick={resetGame}>NEW WORDLE</button>
+                        )}
+                    </section>
+                </div>
+            )}
             <button id="generate-new-word-btn" onClick={resetGame}>NEW WORDLE</button>
         </div>
     )
